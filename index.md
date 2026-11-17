@@ -14,12 +14,12 @@ hero:
       text: skapi.com
       link: https://www.skapi.com
   image:
-    src: /sk-py-sdk.svg
-    alt: Skapi logo with the Python logo
+    src: /skapi-icon-cut-low.png
+    alt: Skapi logo
 
 features:
   - title: Made for Python
-    icon: 🐍
+    icon: '<span class="feature-logos"><span><img src="/lang/python.svg" alt="Python logo" width="28" height="28"></span></span>'
     details: "pip install skapi and connect with your Project ID. Python 3.9 or later, standard library only. Use it in scripts, servers, data jobs and command line tools."
     link: https://pypi.org/project/skapi/ 
   - title: Build with your AI Agents
