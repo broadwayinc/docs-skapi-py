@@ -104,7 +104,7 @@ export default defineConfig({
       },
     ],
     socialLinks: [{ icon: 'github', link: 'https://github.com/broadwayinc/skapi-py' }],
-    footer: { message: 'skapi-py 2.4.0', copyright: 'broadway Inc.' },
+    footer: { message: 'skapi-py 2.4.4', copyright: 'broadway Inc.' },
   },
   vite: {
     server: {

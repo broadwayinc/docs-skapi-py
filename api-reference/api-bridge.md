@@ -28,7 +28,7 @@ Calls another API from Skapi's server.
 | `secretName` | str | A client secret of the project. Its value replaces `"$CLIENT_SECRET"` in `url` and in every string of `headers`, `data` and `params`. Left out when `"$CLIENT_SECRET"` appears nowhere. |
 | `skapiHeaders` | bool or `{"user"?: bool, "service"?: bool}` | Sends `x-skapi-user` (the signed-in user's ID) and `x-skapi-service`. |
 | `queue` | str | Queue the request on the server. No colons. |
-| `poll` | int, float or bool | Milliseconds between checks (`True` = 1000). Waits for the answer; makes a queue name when none is given. |
+| `poll` | int, float or bool | Milliseconds between checks, 1000 or more (`True` = 1000; `0` does not poll); a shorter one is refused with `INVALID_PARAMETER`. Waits for the answer; makes a queue name when none is given. |
 | `stream` | bool | Relay the answer as it arrives. Queued and polled like `poll`. |
 | `expires` | int | Seconds the request stays in the history after it settles. |
 | `multipart` | bool | Send `form` as `multipart/form-data`. Files are `{"file", "filename"?, "content_type"?}` dicts or `bytes`. |
@@ -55,7 +55,7 @@ Returns:
 | `INVALID_PARAMETER` | `"skapiHeaders" should be type: <boolean> or { user?: boolean; service?: boolean }.` |
 | `INVALID_PARAMETER` | `<value> is invalid in "secretName". allowed type or value is: Type<string>.` (also `"queue"`; `Type<number>` for `"expires"`) |
 | `INVALID_PARAMETER` | `"stream" should be type: <boolean>.` / `"multipart" should be type: <boolean>.` |
-| `INVALID_PARAMETER` | `"poll" should be a non-negative number.` |
+| `INVALID_PARAMETER` | `"poll" should be a number of milliseconds, 1000 or more.` |
 | `INVALID_PARAMETER` | `"responseType" should be either "json" or "text".` / `"responseType": "response" is not available here. ...` |
 | `INVALID_PARAMETER` | `"data" cannot be sent with "multipart": true. The form itself is the body.` |
 | `INVALID_PARAMETER` | `"multipart": true needs a form body in the first argument.` / `"form" should be a submit event, a form element, FormData, or an object.` |
@@ -75,12 +75,12 @@ skapi.forward_request_poll(request_id: str, *, poll: float = 1000, url: str | No
                            on_stream: Callable[[str, int], None] | None = None) -> Any
 ```
 
-Waits for a queued request and returns its result. The first check goes out after `poll` milliseconds (`0` means 1000). It blocks until the request settles; there is no time limit. With `on_stream`, new text of a streamed request is handed over as it arrives.
+Waits for a queued request and returns its result. The first check goes out after `poll` milliseconds (`0` means 1000). A value under 1000 is refused with `INVALID_PARAMETER`. It blocks until the request settles; there is no time limit. With `on_stream`, new text of a streamed request is handed over as it arrives.
 
 | argument | |
 |---|---|
 | `request_id` | The `request_id`, or the short `id` with `url` and `method`. |
-| `poll` | Milliseconds between checks. |
+| `poll` | Milliseconds between checks, 1000 or more (`0` means 1000). |
 | `url`, `method` | Needed with a short `id`. |
 | `on_stream` | `(text, seq)` for a streamed request. |
 
@@ -97,7 +97,7 @@ Returns:
 
 | code | message |
 |---|---|
-| `INVALID_PARAMETER` | `"poll" should be a number.` / `"poll" should be a non-negative number.` |
+| `INVALID_PARAMETER` | `"poll" should be a number.` / `"poll" should be a number of milliseconds, 1000 or more.` |
 | `INVALID_PARAMETER` | `"requestId" should be type: <string>.` |
 | `INVALID_PARAMETER` | `"url" and "method" are required to address a request by its short id.` / `"<url>" is an invalid url.` |
 | `NOT_EXISTS` | `Request not found.` |
@@ -115,13 +115,13 @@ Reads a streamed request, from the start or after `since`, and returns once it s
 |---|---|---|
 | `url`, `method` | str | Needed with a short `id`. |
 | `since` | int | Start after this `seq`. |
-| `poll` | int or float | Milliseconds between reads while it runs. Default 1000. |
+| `poll` | int or float | Milliseconds between reads while it runs, 1000 or more. Default 1000. |
 
 ### Errors
 
 | code | message |
 |---|---|
-| `INVALID_PARAMETER` | `"poll" should be a non-negative number.` / `"since" should be a number.` |
+| `INVALID_PARAMETER` | `"poll" should be a number of milliseconds, 1000 or more.` / `"since" should be a number.` |
 | `INVALID_PARAMETER` | `"requestId" should be type: <string>.` / `"url" and "method" are required to address a request by its short id.` / `"<url>" is an invalid url.` |
 | `NOT_EXISTS` | `Request not found.` |
 

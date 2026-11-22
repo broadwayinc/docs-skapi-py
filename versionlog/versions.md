@@ -1,10 +1,23 @@
 # Version History
 
-### Current version: 2.4.0
+### Current version: 2.4.4
 
 ```
 pip install --upgrade skapi
 ```
+
+**2.4.4**
+
+skapi-py 2.4.4 matches skapi-js 2.4.4. There was no skapi-py 2.4.2 or 2.4.3.
+
+Fixes and changes:
+
+- **Uploads are no longer cut off while they are still moving.** Python sends a request body in one piece and the socket limit covered all of it, so a file had to be fully sent within `timeout` (120 seconds by default): a large file on a slow connection failed partway through with `NETWORK_ERROR`. `upload_files()` now sends the file in small blocks, and `timeout` is how long an upload may go with nothing sent. Once the whole file is sent, its answer may take 5 × `timeout`. A stalled upload is listed in `errors` with the code `TIMEOUT` (`Upload timeout: ...`).
+- **A request that stops moving fails with `TIMEOUT`.** When nothing is sent or received for `timeout` seconds, a call now raises `TIMEOUT` (`No response for 120 seconds.` with the default) instead of `NETWORK_ERROR`, so you can tell a dead connection from no connection. See [Errors](/introduction/errors).
+- **Polling intervals under 1 second are refused.** The `poll` option of [`forward_request()`](/api-reference/api-bridge#forward-request), the `poll` of [`forward_request_poll()`](/api-reference/api-bridge#forward-request-poll) and the `poll` option of [`forward_request_stream()`](/api-reference/api-bridge#forward-request-stream) now raise `INVALID_PARAMETER` (`"poll" should be a number of milliseconds, 1000 or more.`) for a value under `1000`; before, any number of 0 or more was accepted. `poll: 0` on [`forward_request()`](/api-reference/api-bridge#forward-request) still means "do not poll", and `0` on [`forward_request_poll()`](/api-reference/api-bridge#forward-request-poll) still means the default, 1000. The same rule as skapi-js 2.4.4.
+- `skapi.version` reads `"2.4.4"` (it read `"2.4.0"` in 2.4.1).
+
+skapi-js 2.4.3 (signed-out reads no longer sign out) and the 2.4.4 request queue change need nothing here: skapi-py never signed out on a read, and it sends each request on its own instead of through a page-wide queue.
 
 **2.4.0**
 

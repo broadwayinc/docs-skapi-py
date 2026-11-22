@@ -22,7 +22,9 @@ These can come from any method below that takes the input or needs the state.
 | `INVALID_PARAMETER` | `"ascending" should be a boolean.` | `fetch_options["ascending"]` |
 | `INVALID_PARAMETER` | `"<value>" is invalid startKey key.` | `startKey` is not a dict, `"start"` or `"end"` |
 | `NETWORK_ERROR` | `Network error` | no answer came back |
+| `TIMEOUT` | `No response for <timeout> seconds.` | nothing was sent or received for `timeout` seconds |
 | `TOO_MANY_REQUESTS` | `Too many requests: ...` | still refused after 6 automatic retries |
+| `TIMEOUT` | `Upload timeout: ...` | a file upload stalled: nothing sent for `timeout` seconds, or no answer 5 × `timeout` seconds after it was sent (listed in `errors` of `upload_files()`) |
 
 `fetch_options` is `{"limit", "fetchMore", "ascending", "startKey"}`, see [Paging](/database/fetch#paging). Methods that take it return `{"list": [...], "startKey": ..., "endOfList": bool, "startKeyHistory": [...]}`.
 

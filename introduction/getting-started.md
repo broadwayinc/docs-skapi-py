@@ -83,7 +83,7 @@ Skapi(project_id, storage=None, timeout=120)
 | option | default | what it does |
 |---|---|---|
 | `storage` | `None` (memory) | where the signed-in session is kept: `None`, a file path, or a storage object |
-| `timeout` | `120` | seconds to wait for each request |
+| `timeout` | `120` | seconds: how long a request may go with nothing moving before it fails. An upload that keeps moving is never cut off; once a file is fully sent, its answer may take 5 × `timeout` |
 
 ## Threads
 

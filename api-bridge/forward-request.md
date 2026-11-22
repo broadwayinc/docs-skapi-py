@@ -126,7 +126,7 @@ The envelope:
 
 Keep `request_id`: it is how you read the answer. Queue names cannot contain colons. `expires` (seconds) removes the request from the history that long after it settles.
 
-`poll` (milliseconds between checks, `True` for 1000) does the waiting for you. A queue name is made up when you give none.
+`poll` (milliseconds between checks, 1000 or more; `True` for 1000) does the waiting for you. A queue name is made up when you give none.
 
 ```python
 result = skapi.forward_request({
