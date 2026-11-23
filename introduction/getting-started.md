@@ -89,6 +89,26 @@ Skapi(project_id, storage=None, timeout=120)
 
 A `Skapi` object holds one signed-in user. Use one object per thread, and when a program signs in more than one user at once, one object per user, each with its own `storage`.
 
+## Building With Your AI Agent
+
+An AI coding agent can write your skapi-py program. Give it Skapi's base prompt for skapi-py:
+
+- **[SKAPI.md](https://py.skapi.com/SKAPI.md)** (<a href="/SKAPI.md" download="SKAPI.md">download</a>): the rules for building a Python client application, a map of this documentation and an index of every skapi-py method. Each entry links to its page under `https://py.skapi.com/md/` (every page of this site as raw markdown), and the agent opens a page when it builds that feature, so it needs to be able to open public web pages.
+
+To use it:
+
+1. Download the file.
+2. Save it in your project folder under the name your agent reads (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md` ...), or attach it to your chat.
+3. Ask the agent to use it as its base prompt, with your Project ID:
+
+```text
+Use SKAPI.md as your base prompt.
+My Skapi project ID is "<Project ID>".
+Build me a [describe what you want].
+```
+
+With the [Skapi MCP server](https://mcp.skapi.com) connected, the agent can also create a project, register Secret Keys and Tickets, and read this documentation through its `readDocs` tool.
+
 ## Next
 
 - [Signing Up Users](/authentication/signup) and [Login / Logout](/authentication/login)
