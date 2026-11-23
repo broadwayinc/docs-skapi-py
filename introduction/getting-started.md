@@ -13,6 +13,25 @@ skapi-py is the Skapi API for Python. It signs users in, keeps their sessions, a
 pip install skapi
 ```
 
+### macOS: `CERTIFICATE_VERIFY_FAILED` on the first call
+
+With Python installed from python.org on a Mac, the first call can fail with:
+
+```
+skapi.errors.SkapiError: NETWORK_ERROR: Network error: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate
+```
+
+This means Python could not check skapi's HTTPS certificate because it has no list of trusted certificates yet. That Python does not use the Mac's own list, and it gets one of its own only when you run **Install Certificates.command**. It affects every HTTPS call from that Python, not only skapi. Fix it once, in either of these ways:
+
+- Open the Python folder in **Applications** (for example `Python 3.13`) and double-click **Install Certificates.command**.
+- Or point Python at the Mac's own list when you run your program:
+
+  ```
+  SSL_CERT_FILE=/etc/ssl/cert.pem python your_app.py
+  ```
+
+Certificates are still checked either way. Python from Homebrew, Linux and Windows does not need this.
+
 ## Connect to your project
 
 ```python

@@ -46,6 +46,7 @@ skapi = Skapi("<Project ID>", storage="~/.myapp/session.json")
 
 - One `Skapi` object works with one project and holds one signed-in user. It connects on its first call, not when it is created. Every method is a plain blocking call that returns dicts and lists.
 - Without `storage` the session lasts only as long as the object. With a file path the user stays signed in between runs: check `skapi.user is None` before asking them to log in. The file holds the user's tokens: keep it out of version control. See [Login](/authentication/login.md#staying-signed-in-between-runs).
+- If the first call fails with `NETWORK_ERROR` and `CERTIFICATE_VERIFY_FAILED` in the message, Python has no trusted certificates (python.org Python on macOS). Do not turn certificate checks off: tell the user to run **Install Certificates.command** from the Python folder in Applications, or to run the program with `SSL_CERT_FILE=/etc/ssl/cert.pem`. See [Getting Started](/introduction/getting-started.md#macos-certificate-verify-failed-on-the-first-call).
 - Use one object per thread, and one object per signed-in user, each with its own `storage`. See [Threads](/introduction/getting-started.md#threads).
 
 ## Project Settings Made by the Owner
