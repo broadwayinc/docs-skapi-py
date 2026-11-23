@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "Skapi"
   text: "Instant Serverless Backend\nfor Python"
-  tagline: "Everything your web application needs from a backend, without managing servers or infrastructure."
+  tagline: "Everything your client application needs from a backend, without managing servers or infrastructure."
 
   actions:
     - theme: brand
@@ -20,12 +20,12 @@ hero:
 features:
   - title: Made for Python
     icon: '<span class="feature-logos"><span><img src="/lang/python.svg" alt="Python logo" width="28" height="28"></span></span>'
-    details: "pip install skapi and connect with your Project ID. Python 3.9 or later, standard library only. Use it in scripts, servers, data jobs and command line tools."
+    details: "pip install skapi and connect with your Project ID. Python 3.9 or later, standard library only. Use it in client applications: command line tools and scripts."
     link: https://pypi.org/project/skapi/ 
   - title: Build with your AI Agents
     icon: 🤖
     details: Let your AI agent build your backend with Skapi. Spend less time on infrastructure and more time building your application.
-    link: https://mcp.broadwayinc.computer/
+    link: https://mcp.skapi.com/
   - icon: ⚡
     title: High Performance. Lower Costs.
     details: A fully serverless architecture that scales with your application while keeping operating costs low.

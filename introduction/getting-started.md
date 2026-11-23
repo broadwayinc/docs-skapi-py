@@ -1,6 +1,6 @@
 # Getting Started
 
-skapi-py is the Skapi API for Python. It signs users in, keeps their sessions, and reads and writes your project's database, with the same queries, answers and error codes as [skapi-js](https://docs.skapi.com). Use it in scripts, servers, data jobs and command line tools.
+skapi-py is the Skapi API for Python. It signs users in, keeps their sessions, and reads and writes your project's database, with the same queries, answers and error codes as [skapi-js](https://docs.skapi.com). Use it in client applications: command line tools and scripts.
 
 ## Requirements
 
@@ -87,7 +87,7 @@ Skapi(project_id, storage=None, timeout=120)
 
 ## Threads
 
-A `Skapi` object holds one signed-in user. Use one object per thread, and for a server that acts for many users at once, one object per user, each with its own `storage`.
+A `Skapi` object holds one signed-in user. Use one object per thread, and when a program signs in more than one user at once, one object per user, each with its own `storage`.
 
 ## Next
 

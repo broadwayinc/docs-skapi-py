@@ -81,7 +81,7 @@ On an [anonymous](/authentication/anonymous) session, `logout()` deletes the tem
 
 ## Signing in with tokens
 
-[`login_with_token()`](/api-reference/authentication#login-with-token) takes over a session that started somewhere else, for example a web app using skapi-js that sends the user's tokens to your Python server.
+[`login_with_token()`](/api-reference/authentication#login-with-token) takes over a session that started somewhere else, for example a sign-in made on a web page with skapi-js, whose tokens are handed to your Python program.
 
 ```python
 user = skapi.login_with_token(id_token, access_token, refresh_token)
@@ -90,5 +90,5 @@ user = skapi.login_with_token(id_token, access_token, refresh_token)
 All three tokens are required. The ID token must belong to this project and must not be expired. The object is then signed in as that user, and the tokens are saved to `storage`. `skapi.session` holds the current tokens (`.id_token.jwt_token`, `.access_token.jwt_token`, `.refresh_token`) if you need to pass them on.
 
 ::: warning
-skapi-py reads the profile from the ID token without checking its signature. The server checks the tokens on every request. Before trusting `skapi.user` in your own server code, make a signed-in call, for example `get_profile(refresh_token=True)`, which returns `None` for tokens the server refuses.
+skapi-py reads the profile from the ID token without checking its signature. The server checks the tokens on every request. Before trusting `skapi.user` in your code, make a signed-in call, for example `get_profile(refresh_token=True)`, which returns `None` for tokens the server refuses.
 :::
