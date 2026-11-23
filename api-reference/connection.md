@@ -15,7 +15,7 @@ skapi = Skapi(project_id: str, *, storage=None, timeout: float = 120, encryption
 | `timeout` | seconds: how long a request may go with nothing moving before it fails. An upload that keeps moving is never cut off; once a file is fully sent, its answer may take 5 × `timeout` |
 | `encryption` | `True` or options: encrypts the data of private records before upload. Needs `pip install "skapi[encryption]"`. See [Encryption](/api-reference/encryption#constructor-option). |
 
-Attributes: `project_id`, `service`, `owner`, `version` (`"2.4.4"`), `user` (the signed-in profile or `None`), `session` (tokens: `.id_token.jwt_token`, `.access_token.jwt_token`, `.refresh_token`), `connection` (the last connection info from the server).
+Attributes: `project_id`, `service`, `owner`, `version` (`"2.4.5"`), `user` (the signed-in profile or `None`), `session` (tokens: `.id_token.jwt_token`, `.access_token.jwt_token`, `.refresh_token`), `connection` (the last connection info from the server).
 
 ### Errors
 
@@ -40,7 +40,7 @@ The project's name and settings, and the caller as the server sees it. `refresh=
     "user_ip": "203.0.113.7",
     "user_agent": "Python-urllib/3.12",
     "user_location": "KR",
-    "version": "2.4.4",
+    "version": "2.4.5",
     "conf": {"prevent_signup": False, "require_login": False, "anonymous_login": False, ...},
     "encryption_recovery": {"code": None, "message": "..."},   # only with encryption on and a signed-in user
 }
