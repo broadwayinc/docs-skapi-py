@@ -24,6 +24,15 @@ print(record["record_id"], record["data"]["title"])
 
 Data larger than 32 KB is kept in file storage instead of the database. You do not have to do anything about it: reading the record gives back the value you posted.
 
+The key `__skapi__` at the top of an object is reserved: it is where Skapi features read their settings, and Skapi reads nothing else of your data. Today one feature uses it: [link previews](https://docs.skapi.com/hosting/hosting.html#link-previews) of a hosted site read `__skapi__.og` of a record in the `public` access group (`title`, `description`, `image`: the name of an image file attached to the record, `url`: a path on the site), to show its title and picture when `https://<name>.skapi.com/__skapi__/og/<record_id>` is shared. Keep your own fields outside `__skapi__`.
+
+```python
+skapi.post_record(
+    {"photo": 42, "__skapi__": {"og": {"title": "Sunset over the bay", "image": "preview", "url": "/index.html#photo=42"}}},
+    {"table": {"name": "share_cards", "access_group": "public"}},
+)  # then attach the picture as the file "preview"
+```
+
 ## config
 
 | key | type | |
