@@ -2,7 +2,7 @@
 
 ## Updating a record
 
-Call [post_record](/api-reference/database#post-record) with the record's `record_id` in the config. Only the keys you send change; everything else on the record stays as it is. You must be signed in, and the record must be yours.
+Call [post_record](/api-reference/database#post-record) with the record's `record_id` in the config. Only the keys you send change; everything else on the record stays as it is. You must be signed in, and the record must be yours. The one exception: the uploader of a record with `can_modify_referencing_records` on can change some keys of the records that reference it, see [Editing records that reference yours](/database/reference#editing-records-that-reference-yours).
 
 ```python
 from skapi import Skapi, SkapiError
@@ -67,6 +67,7 @@ Moving a record into or out of `"private"` removes every [private access grant](
 | code | message | when |
 |---|---|---|
 | `INVALID_REQUEST` | `User has no access to update this record.` | the record is someone else's |
+| `INVALID_REQUEST` | `The referenced record's user can only change the data, tags and index of a record that references theirs, or unlink it (<key> differs).` | the record is someone else's and references yours: only `data`, `tags`, `index` and `"reference": None` can change |
 | `INVALID_REQUEST` | `Record is read only.` | the record was created with `readonly: True` |
 | `INVALID_REQUEST` | `Public users cannot update existing records.` | you are signed out |
 

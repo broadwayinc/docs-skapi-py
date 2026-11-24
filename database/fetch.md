@@ -150,15 +150,21 @@ Every record comes back as a dict:
         "referencing_limit": None,
         "prevent_multiple_referencing": False,
         "can_remove_referencing_records": False,
+        "can_modify_referencing_records": False,
         "only_granted_can_reference": False,
     },
     "referenced_count": 0,             # records that reference this one
     "readonly": False,
     "uploaded": 1731600000000,         # milliseconds
     "updated": 1731600000000,
-    "ip": "203.0.113.7",
+    "updated_by": "...",               # only when someone other than the uploader made the last update
+    "ip": "203.0.113.7",               # "" unless you uploaded it, see below
     "bin": {"cover": [file, ...]},     # attached files, see Files
 }
 ```
 
 Each entry in `bin` is a dict with `access_group`, `filename`, `url`, `path`, `size` and `uploaded`. See [Files](/database/files#files-on-a-record).
+
+`ip` is the address the record was posted from. Only the record's uploader, the project owner and admins in access group 99 get it; everyone else gets `""`. A record a signed-out user posted from an IPv4 address reads `"0.0.0.0"` for them, and its `user_id` still starts with `anonymous:`. One posted from an IPv6 address reads `""`, and its `user_id` has no `anonymous:` prefix, as before.
+
+`updated_by` is there when the last update was made by someone other than the uploader: the user ID of the uploader of the record it references (see [Editing records that reference yours](/database/reference#editing-records-that-reference-yours)), of the project owner, or of an admin. It goes away when the uploader updates the record again. Read it with `record.get("updated_by")`.

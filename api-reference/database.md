@@ -34,7 +34,7 @@ These can come from any method below that takes the input or needs the state.
 skapi.post_record(data=<left out>, config: dict = None, files: list | None = None) -> dict
 ```
 
-Creates a record, or updates the one named by `config["record_id"]`. Returns the saved record. See [Creating Records](/database/create) and [Updating](/database/update-delete).
+Creates a record, or updates the one named by `config["record_id"]`. Returns the saved record. See [Creating Records](/database/create) and [Updating](/database/update-delete). The uploader of a record with `can_modify_referencing_records` on can also update the `data`, `tags` and `index` of records that reference it, or unlink them with `"reference": None`: see [Editing records that reference yours](/database/reference#editing-records-that-reference-yours).
 
 | argument | |
 |---|---|
@@ -51,7 +51,7 @@ Creates a record, or updates the one named by `config["record_id"]`. Returns the
 | `index` | dict or `None` | `{"name": str, "value": str, number or bool}`. `None` removes it. |
 | `tags` | list of str, or comma-separated str | `None` or `[]` removes them. |
 | `reference` | str, `{"record_id"}`, `{"unique_id"}` or `None` | `None` removes it. |
-| `source` | dict | `referencing_limit` (number or `None`), `prevent_multiple_referencing`, `can_remove_referencing_records`, `only_granted_can_reference`, `allow_granted_to_grant_others` (bools), `referencing_index_restrictions` (list of `{"name", "value"?, "condition"?}`). See [Reference rules](/database/reference#reference-rules). |
+| `source` | dict | `referencing_limit` (number or `None`), `prevent_multiple_referencing`, `can_remove_referencing_records`, `can_modify_referencing_records`, `only_granted_can_reference`, `allow_granted_to_grant_others` (bools), `referencing_index_restrictions` (list of `{"name", "value"?, "condition"?}`). See [Reference rules](/database/reference#reference-rules). `can_modify_referencing_records` can be turned on only when the record is created, and turned off at any time. |
 | `remove_bin` | list of urls or bin dicts, or `None` | Files to remove. `None` removes every file; `[]` removes nothing. |
 
 ### Errors
@@ -77,6 +77,8 @@ Creates a record, or updates the one named by `config["record_id"]`. Returns the
 | `INVALID_REQUEST` | `Public users can only post records to public tables.` / `Public users cannot update existing records.` / `Public users cannot set unique_id for records.` / `Public users cannot remove files from records.` |
 | `INVALID_REQUEST` | `User has no access to update this record.` |
 | `INVALID_REQUEST` | `Record is read only.` |
+| `INVALID_REQUEST` | `"source.can_modify_referencing_records" can only be set when the record is created. Only the project owner and admins in access group 99 can turn it on for an existing record.` |
+| `INVALID_REQUEST` | `The referenced record's user can only change the data, tags and index of a record that references theirs, or unlink it (<key> differs).` / `The referenced record's user cannot update a private record.` |
 | `INVALID_REQUEST` | `Only the owner of a record can move it into or out of the private access group.` / `User has no access to change the private access of the record.` |
 | `INVALID_REQUEST` | `"__data__/__json__.json" is a reserved file name.` (a file named `__json__.json` under the name `__data__`) |
 

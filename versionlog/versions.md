@@ -1,10 +1,26 @@
 # Version History
 
-### Current version: 2.4.5
+### Current version: 2.5.0
 
 ```
 pip install --upgrade skapi
 ```
+
+**2.5.0**
+
+skapi-py 2.5.0 matches skapi-js 2.6.0.
+
+New:
+
+- **`source.can_modify_referencing_records`.** Post a record with `"source": {"can_modify_referencing_records": True}` and its uploader can change the `data`, `tags` and `index` of records other users post under it, or unlink them with `"reference": None`, through an ordinary [`post_record()`](/api-reference/database#post-record) with the other record's `record_id`. Nothing else of those records can change: not their table, access group, `readonly`, `unique_id`, `source`, subscription settings or files, and `reference` only to `None`. Private and read-only records cannot be edited this way. The setting can only be turned on when the record is created (the project owner and admins in access group 99 can turn it on later), and turned off at any time. Every record's `source` now has `can_modify_referencing_records` (`False` by default). See [Editing records that reference yours](/database/reference#editing-records-that-reference-yours).
+- **`record["updated_by"]`.** When someone other than a record's uploader made its last update (the uploader of the record it references, the project owner or an admin), the record has `updated_by`, that user's ID. It goes away once the uploader updates the record again. It is not a `source` setting. See [The record](/database/fetch#the-record).
+
+Fixes and changes:
+
+- **`ip` is only for the uploader, the project owner and access group 99 admins.** Records read by anyone but their uploader, the project owner and admins in access group 99 come back with `"ip": ""` (`"0.0.0.0"` for a record a signed-out user posted from an IPv4 address, whose `user_id` still starts with `anonymous:`). `readonly` and `unique_id` are read as before. skapi-py reads such a record, and one with no `ip` at all, without errors.
+- **`"reference": None` no longer lets a record into a higher access group.** A user can post a record in an access group above their own only when the request references a record in that group (a reply). Unlinking with `"reference": None`, or an update that keeps the record's reference but moves it to another access group, now raises `INVALID_REQUEST` with `User has no access to this group.`, like any other post above the user's access group.
+- On the server, with no change needed in your code: removing or changing a record's `reference` no longer leaves it in reads by the old reference or in the old parent owner's feed, and uploaded HTML, SVG and other files a browser could run are served so that they cannot run as pages on the file address.
+- `skapi.version` reads `"2.5.0"`.
 
 **2.4.5**
 

@@ -1,6 +1,6 @@
 # API Reference
 
-Every method of skapi-py 2.4.5. Each one raises [`SkapiError`](/introduction/errors) on failure.
+Every method of skapi-py 2.5.0. Each one raises [`SkapiError`](/introduction/errors) on failure.
 
 ## [Connection](/api-reference/connection)
 
