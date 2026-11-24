@@ -213,7 +213,7 @@ Only a settled request can be finalized. After three failed reads of the pieces 
 
 ## Request history
 
-[forward_request_history](/api-reference/api-bridge#forward-request-history) lists your requests to one `url` and `method` (upper case), with their answers:
+[forward_request_history](/api-reference/api-bridge#forward-request-history) lists your requests to one `url` and `method` (upper case), with their answers. Only your own requests are listed, also when you name a queue: another user's requests on a queue with the same name never appear. For example:
 
 ```python
 history = skapi.forward_request_history({
