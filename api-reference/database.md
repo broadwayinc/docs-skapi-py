@@ -53,7 +53,7 @@ Creates a record, or updates the one named by `config["record_id"]`. Returns the
 | `readonly` | bool | |
 | `index` | dict or `None` | `{"name": str, "value": str, number or bool}`. `None` removes it. |
 | `tags` | list of str, or comma-separated str | `None` or `[]` removes them. |
-| `reference` | str, `{"record_id"}`, `{"unique_id"}` or `None` | `None` removes it. |
+| `reference` | str, `{"record_id"}`, `{"unique_id"}` or `None` | `None` removes it. A record above your access group must reference a record you were granted, at or below that record's access group. See [References](/database/reference). |
 | `source` | dict | `referencing_limit` (number or `None`), `prevent_multiple_referencing`, `can_remove_referencing_records`, `can_modify_referencing_records`, `only_granted_can_reference`, `allow_granted_to_grant_others` (bools), `referencing_index_restrictions` (list of `{"name", "value"?, "condition"?}`). See [Reference rules](/database/reference#reference-rules). `can_modify_referencing_records` can be turned on only when the record is created, and turned off at any time. |
 | `remove_bin` | list of urls or bin dicts, or `None` | Files to remove. `None` removes every file; `[]` removes nothing. |
 
@@ -80,6 +80,7 @@ Creates a record, or updates the one named by `config["record_id"]`. Returns the
 | `INVALID_REQUEST` | `Public users can only post records to public tables.` / `Public users cannot update existing records.` / `Public users cannot set unique_id for records.` / `Public users cannot remove files from records.` |
 | `INVALID_REQUEST` | `User has no access to update this record.` |
 | `INVALID_REQUEST` | `Record is read only.` |
+| `INVALID_REQUEST` | `User has no access to this group.` (a record above your access group with no reference) / `User has no access to this group. A record above your access group must reference a record you were granted, and stay at or below that record's access group.` / `User has no access to this group. A private record lends no access group: a record that references it can be at most your own access group, or private.` (a reference that does not let the record go there; see [References](/database/reference)) |
 | `INVALID_REQUEST` | `"source.can_modify_referencing_records" can only be set when the record is created. Only the project owner and admins in access group 99 can turn it on for an existing record.` |
 | `INVALID_REQUEST` | `The referenced record's user can only change the data, tags and index of a record that references theirs, or unlink it (<key> differs).` / `The referenced record's user cannot update a private record.` |
 | `INVALID_REQUEST` | `Only the owner of a record can move it into or out of the private access group.` / `User has no access to change the private access of the record.` |
@@ -365,7 +366,7 @@ On an [encrypted](/database/encryption#sharing-a-record) record, the record's ke
 skapi.list_private_record_access(params: dict, fetch_options: dict | None = None) -> dict
 ```
 
-Signed-in only. `params`: `{"record_id"?: str, "user_id"?: str or list}`, at least one. Each item in `list` has `record_id` and `user_id`. See [Listing grants](/database/private#listing-grants).
+Signed-in only. `params`: `{"record_id"?: str, "user_id"?: str or list}`, at least one. Each item in `list` has `record_id` and `user_id`. Only users with access to the data can list, see [Listing grants](/database/private#listing-grants).
 
 ### Errors
 
@@ -373,6 +374,7 @@ Signed-in only. `params`: `{"record_id"?: str, "user_id"?: str or list}`, at lea
 |---|---|
 | `INVALID_PARAMETER` | `Either record_id or user_id must be provided.` |
 | `INVALID_PARAMETER` | `user_id should be type: <string \| string[]>` / `User ID is invalid.` |
+| `INVALID_REQUEST` | `User has no access to list the private access of this record.` / `User has no access to list the private access of this user.` |
 
 ## request_private_record_access_key
 
@@ -380,12 +382,12 @@ Signed-in only. `params`: `{"record_id"?: str, "user_id"?: str or list}`, at lea
 skapi.request_private_record_access_key(params: dict) -> str
 ```
 
-Signed-in only. `params`: `{"record_id": str, "reference_id"?: str}`. Returns the key that opens the record's private files, and keeps it on the object. The key is valid for 1 hour; the kept key is returned until it is within a minute of expiring, then a fresh one is requested. [get_file](#get-file) calls this for you. `reference_id` is the record the private record references, when your access comes from that record. See [Private files](/database/private#private-files).
+Signed-in only. `params`: `{"record_id": str, "reference_id"?: str}`. Returns the key that opens the record's private files, and keeps it on the object. The key is valid for 1 hour; the kept key is returned until it is within a minute of expiring, then a fresh one is requested. [get_file](#get-file) calls this for you. `reference_id` is the record the private record references, when your access comes from that record: the key is given only when `record_id` references it directly and you uploaded it or were granted private access to it, or you were granted the private record itself. See [Private files](/database/private#private-files).
 
 ### Errors
 
 | code | message |
 |---|---|
 | `INVALID_PARAMETER` | `Record ID is required.` / `Record ID should be type: <string \| string[]>` / `Reference ID should be type: <string>` |
-| `INVALID_REQUEST` | `User's private access for record: "<record_id>" does not exist.` / `User's private access for reference: "<reference_id>" does not exist.` |
+| `INVALID_REQUEST` | `User's private access for record: "<record_id>" does not exist.` / `User's private access for reference: "<reference_id>" does not exist.` (with `reference_id`: the record does not reference it directly, or you did not upload it and were not granted it, and you hold no grant on the record itself) |
 | `ERROR` | `Invalid private access key response.` |
