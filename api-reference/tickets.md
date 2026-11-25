@@ -1,6 +1,6 @@
 # Tickets
 
-Every method raises [`SkapiError`](/introduction/errors) with a `code` and a `message`, and can raise `NETWORK_ERROR` when no answer comes back. See [Tickets](/tickets/tickets).
+Every method raises [`SkapiError`](/introduction/errors) with a `code` and a `message`, and can raise `NETWORK_ERROR` when no answer comes back, and `TIMEOUT`, `RATE_LIMITED` or `SERVER_ERROR` for the other failures on the way (see [Errors](/introduction/errors)). See [Tickets](/tickets/tickets).
 
 ## consume_ticket
 

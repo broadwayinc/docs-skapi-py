@@ -1,6 +1,6 @@
 # Authentication
 
-Every method raises [`SkapiError`](/introduction/errors) with `.code` and `.message`. Methods that need a signed-in user raise `INVALID_REQUEST` (`User login is required.`) without one, and any method can raise `NETWORK_ERROR` when no answer comes back.
+Every method raises [`SkapiError`](/introduction/errors) with `.code` and `.message`. Methods that need a signed-in user raise `INVALID_REQUEST` (`User login is required.`) without one, and any method can raise `NETWORK_ERROR` when no answer comes back, and `TIMEOUT`, `RATE_LIMITED` or `SERVER_ERROR` for the other failures on the way (see [Errors](/introduction/errors)).
 
 Values that fail a check raise `INVALID_PARAMETER` before anything is sent. The common messages:
 

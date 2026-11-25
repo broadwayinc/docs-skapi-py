@@ -36,10 +36,15 @@ The codes are the same ones skapi-js uses, so a check written for one works for 
 | `REQUEST_EXCEED` | Too many attempts. Wait and try again. |
 | `TOO_MANY_REQUESTS` | The server kept answering "too many requests" after 6 automatic retries. |
 | `NETWORK_ERROR` | No answer came back. The message ends with the reason, for example `Network error: [Errno -2] Name or service not known`. The user stays signed in; try again when the network is back. A message with `CERTIFICATE_VERIFY_FAILED` is a Python setup problem, not the network: see [macOS: CERTIFICATE_VERIFY_FAILED](/introduction/getting-started#macos-certificate-verify-failed-on-the-first-call). |
-| `TIMEOUT` | Nothing was sent or received for `timeout` seconds (`No response for 120 seconds.` with the default), or a file upload stalled (`Upload timeout: ...`). Try again. |
+| `TIMEOUT` | Nothing was sent or received for `timeout` seconds (`No response for 120 seconds.` with the default), a file upload stalled (`Upload timeout: ...`), the sign-in token refresh did not answer within 15 seconds (`The sign-in token refresh did not answer within 15 seconds.`; the user stays signed in and the next call tries again), or a read passed its `deadline` (`No answer within <n> ms.`). Try again. |
+| `RATE_LIMITED` | The server answered "too many requests" (`Too many requests`) without saying when to try again. Wait and try again. A file upload says `TOO_MANY_REQUESTS` instead. |
+| `SERVER_ERROR` | The server failed (a `5xx` answer other than `501`), whatever its body says. The body is kept on `cause`. Try again later. |
+| `ABORTED` | The `signal` you passed to a read was set (`Aborted`). |
 | `EXCEED_LIMIT` | The project is at a limit of its plan. On Trial and Standard, once the month's API requests are used up, every call is refused until the month ends with `This project has used its 500,000 API requests for this month. Requests are refused until the month ends. Consider upgrading your plan.` (the number is the plan's own limit). See [Plans and Limits](https://docs.skapi.com/introduction/plans.html#api-requests). |
 | `ERROR` | Anything else. The message says what happened. |
 
 ## Retries
 
-skapi-py retries on its own when the server asks it to slow down (it waits as long as the server says, up to 6 times), and when a token refresh fails for lack of network (up to about 6 seconds). Other errors are raised at once.
+skapi-py retries on its own when the server asks it to slow down (it waits as long as the server says, up to 6 times), and when a token refresh fails for lack of network (up to about 6 seconds). Other errors are raised at once, except in a wait for a forwarded request ([forward_request_poll](/api-reference/api-bridge#forward-request-poll), and `forward_request` with `poll` or `stream`): there `NETWORK_ERROR`, `TIMEOUT`, `RATE_LIMITED`, `TOO_MANY_REQUESTS`, `SERVER_ERROR` and `ABORTED` are tried again, waiting longer each time up to 30 seconds, and only the server's own answer ends the wait. See [When a read fails](/api-bridge/forward-request#when-a-read-fails).
+
+`NETWORK_ERROR`, `TIMEOUT`, `RATE_LIMITED`, `TOO_MANY_REQUESTS`, `SERVER_ERROR` and `ABORTED` mean the call failed on the way; every other code is the server's answer.

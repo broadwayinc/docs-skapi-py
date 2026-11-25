@@ -56,6 +56,8 @@ Every event is a dict:
 
 Connection events (`success`, `error`, `reconnect`, `close`) carry only `type` and `message`.
 
+Status changes of forwarded requests sent with `notify` travel over the same connection, but they never reach your callback: listen to them with [on_request_status](/api-reference/api-bridge#on-request-status). That listener, and a poll of a request sent with `notify`, open a connection when there is none and a user is signed in, and close it 10 minutes after they let go. A connection your program opened is never closed by them, and calling `connect_realtime` on a connection they opened makes it yours (also while it is still opening: the call waits for it, then takes it).
+
 ## Staying connected
 
 A dropped connection is reopened by skapi-py on its own: after 3 seconds, then 6, 12 and 24, then every 30 seconds, for as long as the user is signed in. The group you were in is joined again. The waits vary a little from client to client, so a service coming back from an outage is not hit by every client in the same second.

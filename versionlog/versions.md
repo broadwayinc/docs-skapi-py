@@ -1,10 +1,37 @@
 # Version History
 
-### Current version: 2.5.0
+### Current version: 2.7.0
 
 ```
 pip install --upgrade skapi
 ```
+
+**2.7.0**
+
+skapi-py 2.7.0 is aligned with skapi-js 2.7.0 (and brings skapi-js 2.5.0's status push). There was no skapi-py 2.6.0.
+
+New:
+
+- **[`forward_request_status(requests)`](/api-reference/api-bridge#forward-request-status)** reads where many forwarded requests stand in one call per 100: status, stream position (`final_seq`), whether an answer is stored (`has_body`), timestamps and `cref`, with no bodies. A request you cannot see comes back as `"missing"` instead of failing the call. See [Reading many requests at once](/api-bridge/forward-request#reading-many-requests-at-once).
+- **[`forward_request_read(request_id)`](/api-reference/api-bridge#forward-request-read)** reads one request and always answers `{"id", "status", "body"?, "error"?, "chunks"?, ...}`, so the status is there even for a resolved request, and with `since` a failed stream comes back with the text it got before it failed.
+- **[`forward_request_queue_counters(queues)`](/api-reference/api-bridge#forward-request-queue-counters)** reads the counters of up to 20 queues (`cnt`, `rct`, `seq`, `in_queue`), so a program can check often and read the requests only when a counter moved.
+- **`cref` on [`forward_request()`](/api-reference/api-bridge#forward-request)**: your own reference for the request (1 to 64 letters, digits, `_` or `-`), stored on it and handed back by the reply, `forward_request_history()`, `forward_request_status()` and `forward_request_read()`, so a send whose reply was lost can be found instead of sent twice. See [Finding a request whose reply was lost](/api-bridge/forward-request#finding-a-request-whose-reply-was-lost).
+- **`notify` on [`forward_request()`](/api-reference/api-bridge#forward-request)**: status push for a queued request of a signed-in user. Each status change arrives over the realtime connection, and the poll reads the request when one arrives and otherwise once a minute, instead of at every interval. [`forward_request_poll()`](/api-reference/api-bridge#forward-request-poll) takes `notify=True` for such a request. **[`on_request_status(callback)`](/api-reference/api-bridge#on-request-status)** listens to these changes, also for requests this program holds no poll for, and **[`is_request_status_live()`](/api-reference/api-bridge#is-request-status-live)** says whether they are arriving. See [Status push with notify](/api-bridge/forward-request#status-push-with-notify).
+- **[`forward_request_history()`](/api-reference/api-bridge#forward-request-history)** takes `fields: "ids"` (only id, status, times, queue and `cref`, no bodies) and `after: "<stamp>:<entropy>"` (only newer requests), and each item now has `cref`.
+- **[`forward_request_finalize(request_id, data, {"if_absent": True})`](/api-reference/api-bridge#forward-request-finalize)** stores the answer only when none is stored yet, and otherwise answers `{"finalized": False, "reason": "exists"}`.
+- **`deadline` and `signal` on the reads.** `forward_request_status()`, `forward_request_read()`, `forward_request_queue_counters()` and `forward_request_history()` take `deadline` (milliseconds the call may take in all, then `TIMEOUT`) and `signal` (a `threading.Event`; once set, the call raises `ABORTED`). `fresh` is accepted for skapi-js code; every skapi-py read is already fresh.
+
+Fixes and changes:
+
+- **A passing failure no longer says the project does not exist.** The first call of a Skapi object reads the project's endpoint list from the CDN, and any failed read of it raised `NOT_EXISTS` ("The project ID does not exist"), so a sign-in could fail once with `NOT_EXISTS` and work when tried again. Now only a missing list (the CDN answers 403 or 404) raises `NOT_EXISTS`; a server fault raises `SERVER_ERROR`, a rate limit `RATE_LIMITED`, a cut-off answer `NETWORK_ERROR`, and no answer in time `TIMEOUT`, all safe to try again.
+- **A wait for a forwarded request ends only with the server's answer.** A check that failed on the way (no network, `TIMEOUT`, a `429`, a server fault, a sign-in token refresh that got no answer) used to raise at once, so a machine that slept or lost the network turned a request that was still running into an error. Such a check is now tried again, at the next interval after the first failure and then twice as long each time, up to 30 seconds. A `401` refreshes the sign-in token once and the wait goes on; with no user signed in it waits for a sign in. A refusal from the server still raises, and a request that no longer exists raises `NOT_EXISTS`. This covers [`forward_request_poll()`](/api-reference/api-bridge#forward-request-poll), [`forward_request_stream()`](/api-reference/api-bridge#forward-request-stream) and `forward_request()` with `poll` or `stream`. See [When a read fails](/api-bridge/forward-request#when-a-read-fails).
+- **Request status messages no longer reach your realtime callback.** When the same user sends requests with `notify` from another app (skapi-js 2.5.0 or later), the server sends status changes to all of that user's realtime connections. skapi-py handed them to your [`connect_realtime()`](/api-reference/realtime#connect-realtime) callback as `"private"` events with no sender and `"code": "CSR_STATUS"`. They now go to [`on_request_status()`](/api-reference/api-bridge#on-request-status) only.
+- **New error codes for failures on the way.** A `5xx` answer (except `501`) raises `SERVER_ERROR` whatever its body says (before: the status number or the body's code), with the body on `cause`. A `429` without `Retry-After` raises `RATE_LIMITED` (before: `ERROR`), and in a file upload `TOO_MANY_REQUESTS`. The messages are the same words as before. See [Errors](/introduction/errors).
+- **A sign-in token refresh that does not answer within 15 seconds raises `TIMEOUT`.** It used to wait as long as the connection stayed open (`timeout`, 120 seconds by default), holding every call that needed a token. The user stays signed in and the next call tries the refresh again. A refresh that answers late is still kept, unless a later refresh was already kept or was started for a profile change (then its older tokens are dropped).
+- **`queue_exact` reads only the named queue on the server.** Requests queued before 2026-06-05 were stored under an older queue format and are not listed with `queue_exact: True`; list the queue without it to see those. `queue_exclude` pages can still come back short.
+- `skapi.version` reads `"2.7.0"`.
+
+skapi-js changes that need nothing here: the realtime stream relay and its end message (2.4.5; skapi-py reads streams by polling), and the 2.7.0 poll registry changes (one poll per request, stopping a poll, poll order within a queue, clock changes), because a skapi-py wait is a blocking call your code owns and its timers already use a clock that never goes back.
 
 **2.5.0**
 

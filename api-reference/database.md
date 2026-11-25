@@ -23,6 +23,9 @@ These can come from any method below that takes the input or needs the state.
 | `INVALID_PARAMETER` | `"<value>" is invalid startKey key.` | `startKey` is not a dict, `"start"` or `"end"` |
 | `NETWORK_ERROR` | `Network error: <reason>` | no answer came back |
 | `TIMEOUT` | `No response for <timeout> seconds.` | nothing was sent or received for `timeout` seconds |
+| `TIMEOUT` | `The sign-in token refresh did not answer within 15 seconds.` | signed in, and the token refresh did not answer; the user stays signed in and the next call tries again |
+| `SERVER_ERROR` | the server's message, or `Server error <status>.` | the server failed (a `5xx` answer other than `501`); the body is kept on `cause` |
+| `RATE_LIMITED` | `Too many requests` | the server answered "too many requests" without saying when to try again |
 | `TOO_MANY_REQUESTS` | `Too many requests: ...` | still refused after 6 automatic retries |
 | `TIMEOUT` | `Upload timeout: ...` | a file upload stalled: nothing sent for `timeout` seconds, or no answer 5 × `timeout` seconds after it was sent (listed in `errors` of `upload_files()`) |
 

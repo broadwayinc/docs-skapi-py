@@ -52,7 +52,7 @@ print(skapi.user["user_id"])
 
 [`get_profile()`](/api-reference/authentication#get-profile) returns the same thing. `get_profile(refresh_token=True)` asks the server for fresh tokens first, so the profile shows changes made elsewhere, for example on another device or by an admin. It returns `None` if the refresh fails. When the saved tokens had already expired and were just refreshed while the session was restored, that refresh is used: the server is asked once, not twice.
 
-skapi-py refreshes the tokens on its own before a request when they have less than an hour left. One refresh runs at a time: other threads using the same object (its realtime and keep-alive threads too) wait for it and use the new tokens. If the network is down, the session stays and the request raises `NETWORK_ERROR`. The session ends only on logout, or when the server refuses the refresh (for example after a global logout).
+skapi-py refreshes the tokens on its own before a request when they have less than an hour left. One refresh runs at a time: other threads using the same object (its realtime and keep-alive threads too) wait for it and use the new tokens. If the network is down, the session stays and the request raises `NETWORK_ERROR`. A request waits for the refresh at most 15 seconds: past that it raises `TIMEOUT` (`The sign-in token refresh did not answer within 15 seconds.`), the session stays, and the next call tries again. The session ends only on logout, or when the server refuses the refresh (for example after a global logout).
 
 ## Staying signed in between runs
 

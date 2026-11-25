@@ -1,6 +1,6 @@
 # API Bridge
 
-Every method raises [`SkapiError`](/introduction/errors) with a `code` and a `message`. Values that fail a check raise `INVALID_PARAMETER` before anything is sent. Any method can raise `NETWORK_ERROR` when no answer comes back. See [Forwarding Requests](/api-bridge/forward-request).
+Every method raises [`SkapiError`](/introduction/errors) with a `code` and a `message`. Values that fail a check raise `INVALID_PARAMETER` before anything is sent. Any method can raise `NETWORK_ERROR` when no answer comes back, and `TIMEOUT`, `RATE_LIMITED` or `SERVER_ERROR` for the other failures on the way (the polls below try those again instead). See [Forwarding Requests](/api-bridge/forward-request).
 
 A request is addressed by its `request_id`, or by its short `id` (`"<stamp>:<entropy>"`) together with the `url` and `method` it was sent with. A signed-out caller can only reach its own requests from the same IP address and User-Agent; any other caller gets `NOT_EXISTS` (`Request not found.`).
 
@@ -33,13 +33,15 @@ Calls another API from Skapi's server.
 | `expires` | int | Seconds the request stays in the history after it settles. |
 | `multipart` | bool | Send `form` as `multipart/form-data`. Files are `{"file", "filename"?, "content_type"?}` dicts or `bytes`. |
 | `responseType` | `"json"` or `"text"` | Reshapes the answer. An envelope is returned unchanged. |
+| `cref` | str | Your own reference for this request: 1 to 64 letters, digits, `_` or `-`. Stored on it and handed back by the reply, [forward_request_history](#forward-request-history), [forward_request_status](#forward-request-status) and [forward_request_read](#forward-request-read), so a send whose reply was lost can be found instead of sent again. Make a new one per request. |
+| `notify` | bool | Status push for a queued request of a signed-in user: each status change arrives over the realtime connection, and the poll reads the request when one arrives and otherwise once a minute. The reply has `"notify": True` when the server accepted it; otherwise nothing changes. See [on_request_status](#on-request-status). |
 
 `"$ACCESS_TOKEN"` anywhere in `url`, `headers`, `data` or `params` becomes the signed-in user's access token (empty when signed out).
 
 Returns:
 
 - no `queue`, `poll` or `stream`: the destination's answer, parsed JSON or text, even when it looks like `{"status": "pending", "id": ...}`. Its status code is not returned.
-- `queue` without `poll`: `{"id", "status": "pending", "queue_name", "in_queue", "request_id"}`.
+- `queue` without `poll`: `{"id", "status": "pending", "queue_name", "in_queue", "request_id"}`, plus `"cref"` and `"notify": True` when those were given and accepted.
 - `poll` or `stream`: what [forward_request_poll](#forward-request-poll) returns once the request settles.
 
 ### Errors
@@ -54,7 +56,8 @@ Returns:
 | `INVALID_PARAMETER` | `"headers" cannot set "<name>": the "x-skapi-" prefix is reserved. Use "skapiHeaders" to tell the destination who the caller is.` |
 | `INVALID_PARAMETER` | `"skapiHeaders" should be type: <boolean> or { user?: boolean; service?: boolean }.` |
 | `INVALID_PARAMETER` | `<value> is invalid in "secretName". allowed type or value is: Type<string>.` (also `"queue"`; `Type<number>` for `"expires"`) |
-| `INVALID_PARAMETER` | `"stream" should be type: <boolean>.` / `"multipart" should be type: <boolean>.` |
+| `INVALID_PARAMETER` | `"stream" should be type: <boolean>.` / `"notify" should be type: <boolean>.` / `"multipart" should be type: <boolean>.` |
+| `INVALID_PARAMETER` | `"cref" should be 1 to 64 characters of letters, digits, "_" or "-".` |
 | `INVALID_PARAMETER` | `"poll" should be a number of milliseconds, 1000 or more.` |
 | `INVALID_PARAMETER` | `"responseType" should be either "json" or "text".` / `"responseType": "response" is not available here. ...` |
 | `INVALID_PARAMETER` | `"data" cannot be sent with "multipart": true. The form itself is the body.` |
@@ -72,10 +75,13 @@ An error answer from the destination is not raised: inline it is returned as the
 
 ```python
 skapi.forward_request_poll(request_id: str, *, poll: float = 1000, url: str | None = None, method: str | None = None,
-                           on_stream: Callable[[str, int], None] | None = None) -> Any
+                           on_stream: Callable[[str, int], None] | None = None,
+                           service: str | None = None, owner: str | None = None, notify: bool = False) -> Any
 ```
 
 Waits for a queued request and returns its result. The first check goes out after `poll` milliseconds (`0` means 1000). A value under 1000 is refused with `INVALID_PARAMETER`. It blocks until the request settles; there is no time limit. With `on_stream`, new text of a streamed request is handed over as it arrives.
+
+Only the server's own answer ends the wait. A check that fails on the way (`NETWORK_ERROR`, `TIMEOUT`, `RATE_LIMITED`, `TOO_MANY_REQUESTS`, `SERVER_ERROR`, `ABORTED`, or a sign-in token that could not be had) is tried again later: at the next interval after the first failure, then twice as long each time, up to 30 seconds. A `401` from the gateway refreshes the sign-in token once and the wait goes on. When the user signs out while it waits, it waits for a sign in. A refusal from the server, such as `NOT_EXISTS`, is raised.
 
 | argument | |
 |---|---|
@@ -83,6 +89,7 @@ Waits for a queued request and returns its result. The first check goes out afte
 | `poll` | Milliseconds between checks, 1000 or more (`0` means 1000). |
 | `url`, `method` | Needed with a short `id`. |
 | `on_stream` | `(text, seq)` for a streamed request. |
+| `notify` | `True` for a request sent with `notify` (the reply said `"notify": True`): it is read at once when a status change of it arrives, and otherwise once a minute while status changes are arriving. Without them it is read every `poll` as usual. |
 
 Returns:
 
@@ -97,7 +104,7 @@ Returns:
 
 | code | message |
 |---|---|
-| `INVALID_PARAMETER` | `"poll" should be a number.` / `"poll" should be a number of milliseconds, 1000 or more.` |
+| `INVALID_PARAMETER` | `"poll" should be a number.` / `"poll" should be a number of milliseconds, 1000 or more.` / `"notify" should be type: <boolean>.` |
 | `INVALID_PARAMETER` | `"requestId" should be type: <string>.` |
 | `INVALID_PARAMETER` | `"url" and "method" are required to address a request by its short id.` / `"<url>" is an invalid url.` |
 | `NOT_EXISTS` | `Request not found.` |
@@ -109,7 +116,7 @@ skapi.forward_request_stream(request_id: str, options: dict | None = None, *,
                              on_stream: Callable[[str, int], None] | None = None) -> Any
 ```
 
-Reads a streamed request, from the start or after `since`, and returns once it settles. The first read is immediate. Running: hands new text to `on_stream` until it settles, then returns the envelope. Settled, not finalized: hands over all the stored text, then returns the envelope. Finalized: returns the kept value. After three degraded reads in a row on a settled request it returns what it has.
+Reads a streamed request, from the start or after `since`, and returns once it settles. The first read is immediate. Running: hands new text to `on_stream` until it settles, then returns the envelope. Settled, not finalized: hands over all the stored text, then returns the envelope. Finalized: returns the kept value. After three degraded reads in a row on a settled request it returns what it has. A read that fails on the way is tried again, with the same rules as [forward_request_poll](#forward-request-poll).
 
 | option key | type | |
 |---|---|---|
@@ -131,9 +138,14 @@ Reads a streamed request, from the start or after `since`, and returns once it s
 skapi.forward_request_finalize(request_id: str, data: Any = None, options: dict | None = None) -> dict
 ```
 
-Stores `data` as a settled streamed request's answer and releases its pieces. Later polls return `data`; [forward_request_history](#forward-request-history) lists it as `response_body`. Calling it again replaces the value. Without `data`, `None` is stored. `options`: `url` and `method`, needed with a short `id`.
+Stores `data` as a settled streamed request's answer and releases its pieces. Later polls return `data`; [forward_request_history](#forward-request-history) lists it as `response_body`. Calling it again replaces the value. Without `data`, `None` is stored.
 
-Returns `{"finalized": bool, "message": str}`. These come back with `finalized: False` instead of raising:
+| option key | type | |
+|---|---|---|
+| `url`, `method` | str | Needed with a short `id`. |
+| `if_absent` | bool | Store only when no answer is stored yet. When one is, nothing changes and the answer is `{"finalized": False, "reason": "exists", ...}`, so two programs settling the same request cannot replace a complete answer with a partial one. |
+
+Returns `{"finalized": bool, "message": str, "reason"?: str}`. These come back with `finalized: False` instead of raising:
 
 | message | |
 |---|---|
@@ -148,6 +160,7 @@ Returns `{"finalized": bool, "message": str}`. These come back with `finalized: 
 | code | message |
 |---|---|
 | `INVALID_PARAMETER` | `"requestId" should be type: <string>.` / `"url" and "method" are required to address a request by its short id.` / `"<url>" is an invalid url.` |
+| `INVALID_PARAMETER` | `"if_absent" should be type: <boolean>.` |
 
 ## forward_request_history
 
@@ -163,9 +176,18 @@ Your forwarded requests to one URL and method. Returns `{"list", "startKey", "en
 | `method` | str | Required, upper case: `"GET"`, `"POST"`, `"PUT"`, `"PATCH"`, `"DELETE"`, `"HEAD"`. |
 | `status` | str | `"pending"`, `"running"`, `"resolved"` or `"failed"`. |
 | `queue` | str | Requests in queues whose name starts with this. |
-| `queue_exact` | bool | Only the queue named in `queue`. |
-| `queue_exclude` | str | Leave out this queue. |
+| `queue_exact` | bool | Only the queue named in `queue`. Requests queued before 2026-06-05 are not listed with it (see below). |
+| `queue_exclude` | str | Leave out this queue. Applied after the read, so a page can come back short while more remain. |
 | `compact` | bool | Leave the bodies out; give `request_text`, `response_text`, `response_complete_marker` and `compact: True` instead. |
+| `fields` | `"ids"` | A light listing: each item is only its id, status, times, queue and `cref`, with no bodies. |
+| `after` | str | Only requests newer than this short id (`"<stamp>:<entropy>"`). |
+| `deadline` | int or float | Milliseconds the call may take in all; past it, it raises `TIMEOUT`. |
+| `signal` | `threading.Event` | Once set, the call raises `ABORTED`. |
+| `fresh` | bool | Accepted for skapi-js code; every skapi-py read is already fresh (it never joins another read). |
+
+A page that `deadline` or `signal` gave up on does not count for `fetchMore`: the same call with `fetchMore` asks for that page again.
+
+With `queue_exact`, the server reads only the named queue. Requests queued before 2026-06-05 were stored under an older queue format and are not listed with `queue_exact: True`; list the queue without it to see those.
 
 Each item has `id`, `status_code`, `response_body` and `request_id`; the other keys are there when the server stored them:
 
@@ -182,6 +204,7 @@ Each item has `id`, `status_code`, `response_body` and `request_id`; the other k
 | `expires` | when it leaves the history |
 | `status` | `"pending"`, `"running"`, `"resolved"`, `"failed"` or `"cancelled"` |
 | `queue_name` | |
+| `cref` | the `cref` it was sent with |
 | `request_id` | for [forward_request_poll](#forward-request-poll) |
 
 ### Errors
@@ -193,6 +216,10 @@ Each item has `id`, `status_code`, `response_body` and `request_id`; the other k
 | `INVALID_PARAMETER` | `<value> is invalid in "method". allowed types or values are: "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD".` |
 | `INVALID_PARAMETER` | `<value> is invalid in "status". allowed types or values are: "pending", "running", "resolved", "failed".` |
 | `INVALID_PARAMETER` | `<value> is invalid in "compact". allowed type or value is: Type<boolean>.` (also `"queue_exact"`) |
+| `INVALID_PARAMETER` | `"fields" should be "ids".` / `<value> is invalid in "after". allowed type or value is: Type<string>.` |
+| `INVALID_PARAMETER` | `"deadline" should be a number of milliseconds above 0.` / `"fresh" should be type: <boolean>.` / `"signal" should be a threading.Event.` |
+| `TIMEOUT` | `No answer within <deadline> ms.` |
+| `ABORTED` | `Aborted` |
 
 ## cancel_forward_request
 
@@ -227,3 +254,128 @@ Returns `{"queue_name": str, "in_queue": int}`.
 |---|---|
 | `INVALID_PARAMETER` | `"queue" is required.` |
 | `INVALID_REQUEST` | `User login is required.` |
+
+## forward_request_status
+
+```python
+skapi.forward_request_status(requests: list, *, service: str | None = None, owner: str | None = None,
+                             deadline: float | None = None, fresh: bool | None = None,
+                             signal: threading.Event | None = None) -> dict
+```
+
+Where many forwarded requests stand, in one call per 100 requests (more are sent 100 at a time, one call after another). No bodies, and a strongly consistent read: a request that just changed shows its new status. Made for checking many unfinished requests at once, for example after the machine slept.
+
+| argument | |
+|---|---|
+| `requests` | Full `request_id`s, or `{"id", "url", "method"}` dicts with the short id. |
+| `deadline` | Milliseconds each call may take in all; past it, `TIMEOUT`. |
+| `signal` | A `threading.Event`; once set, `ABORTED`. |
+| `fresh` | Accepted for skapi-js code; the read is always fresh. |
+
+Returns `{"list": [...]}` in the order asked (anything else the server reports beside the list is kept). Each item:
+
+| key | |
+|---|---|
+| `id` | the short id |
+| `status` | `"pending"`, `"running"`, `"resolved"`, `"failed"`, `"cancelled"`, or `"missing"` when there is no such request for this caller (never sent, expired, deleted, or someone else's) |
+| `queue` | |
+| `stream` | `True` for a request sent with `stream` |
+| `final_seq` | the last piece's `seq`, written when a streamed request settles: a reader is done once its cursor reaches it |
+| `has_body` | an answer is stored (read it with [forward_request_read](#forward-request-read)) |
+| `created`, `updated`, `executed`, `responded` | milliseconds |
+| `cref` | the `cref` it was sent with |
+
+### Errors
+
+| code | message |
+|---|---|
+| `INVALID_PARAMETER` | `"requests" should be an array of request ids or { id, url, method }.` |
+| `INVALID_PARAMETER` | `"requestId" should be type: <string>.` / `"url" and "method" are required to address a request by its short id.` |
+| `INVALID_PARAMETER` | `"deadline" should be a number of milliseconds above 0.` / `"fresh" should be type: <boolean>.` / `"signal" should be a threading.Event.` |
+| `TIMEOUT` | `No answer within <deadline> ms.` |
+| `ABORTED` | `Aborted` |
+
+## forward_request_queue_counters
+
+```python
+skapi.forward_request_queue_counters(queues: list, *, service: str | None = None, owner: str | None = None,
+                                     deadline: float | None = None, fresh: bool | None = None,
+                                     signal: threading.Event | None = None) -> dict
+```
+
+The counters of up to 20 queues, a few bytes each. `rct` grows when a request on the queue finishes and `seq` when one is added: read these on every check, and read the requests themselves ([forward_request_status](#forward-request-status)) only when a counter moved. A queue that never had a request is left out. `deadline`, `signal` and `fresh` as for [forward_request_status](#forward-request-status).
+
+Returns `{"queues": {"<name>": {"cnt": int, "rct": int, "seq": int, "in_queue": int}}}`.
+
+### Errors
+
+| code | message |
+|---|---|
+| `INVALID_PARAMETER` | `"queues" should be an array of 1 to 20 queue names.` (a name cannot be empty or contain a colon) |
+| `TIMEOUT` / `ABORTED` | as for [forward_request_status](#forward-request-status) |
+
+## forward_request_read
+
+```python
+skapi.forward_request_read(request_id: str, *, url: str | None = None, method: str | None = None,
+                           since: int | None = None, service: str | None = None, owner: str | None = None,
+                           deadline: float | None = None, fresh: bool | None = None,
+                           signal: threading.Event | None = None) -> dict
+```
+
+Reads one forwarded request in full, always in the same shape whatever state it is in. Unlike [forward_request_poll](#forward-request-poll), a resolved request does not come back as its bare answer, so the status is always there to read. With `since` (a piece's `seq`, `0` for the beginning) a streamed request's text after that point comes back too, including the text a failed stream got before it failed. `deadline`, `signal` and `fresh` as for [forward_request_status](#forward-request-status).
+
+Returns:
+
+| key | |
+|---|---|
+| `id`, `status` | as in [forward_request_status](#forward-request-status) |
+| `body` | the stored answer: the destination's answer, or what [forward_request_finalize](#forward-request-finalize) kept |
+| `error` | why it failed |
+| `body_unavailable` | `True`: an answer is stored but could not be loaded this time; read again later |
+| `stream` | `True` for a streamed request |
+| `chunks` | with `since`: `[{"seq", "txt"}]` after `since`, oldest first |
+| `last_seq`, `final_seq` | how far the stream has got, and its last `seq` once settled |
+| `more` | more pieces are stored than this read returned: read again from the new cursor |
+| `created`, `updated`, `executed`, `responded`, `cref` | |
+
+### Errors
+
+| code | message |
+|---|---|
+| `INVALID_PARAMETER` | `"since" should be a number.` |
+| `INVALID_PARAMETER` | `"requestId" should be type: <string>.` / `"url" and "method" are required to address a request by its short id.` / `"<url>" is an invalid url.` |
+| `TIMEOUT` / `ABORTED` | as for [forward_request_status](#forward-request-status) |
+
+## on_request_status
+
+```python
+skapi.on_request_status(callback: Callable[[dict], None]) -> Callable[[], None]
+```
+
+Listens to status changes of the signed-in user's requests sent with `notify`, including ones this program holds no poll for (a request the server queued as the continuation of one, or a request sent from another device). Returns a function that removes the listener. `callback` runs on a background thread with one of:
+
+```python
+{"type": "status", "id": "<stamp>:<entropy>", "queue": "...", "status": "running",
+ "previous": "pending", "updated": 1764000000000, "executed": 1764000000000}
+{"type": "connected"}      # the listener is on an open connection: first time and after every reconnect
+{"type": "disconnected"}   # the connection was lost
+```
+
+`previous` is absent for a request that was just created, `executed` until it starts running. Status changes are not kept for a connection that is down, so read again what you show on `"connected"`. A status change is a hint, not the outcome: read the request for that.
+
+While a listener (or a poll with `notify`) is active, the realtime connection is kept open: when your program has none and a user is signed in, one is opened, and it is closed 10 minutes after the last listener and poll let go (never one your program opened, and never while a group is joined). These messages never reach your [connect_realtime](/api-reference/realtime#connect-realtime) callback.
+
+### Errors
+
+| code | message |
+|---|---|
+| `INVALID_PARAMETER` | `Callback must be a function.` |
+
+## is_request_status_live
+
+```python
+skapi.is_request_status_live() -> bool
+```
+
+`True` while status changes are arriving: the server accepted `notify`, the connection is open, and a status change came in on it. Only then do polls with `notify` slow down.

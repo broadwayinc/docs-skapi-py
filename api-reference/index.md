@@ -1,6 +1,6 @@
 # API Reference
 
-Every method of skapi-py 2.5.0. Each one raises [`SkapiError`](/introduction/errors) on failure.
+Every method of skapi-py 2.7.0. Each one raises [`SkapiError`](/introduction/errors) on failure.
 
 ## [Connection](/api-reference/connection)
 
@@ -87,6 +87,9 @@ Every method of skapi-py 2.5.0. Each one raises [`SkapiError`](/introduction/err
 | [`forward_request_poll(request_id)`](/api-reference/api-bridge#forward-request-poll) / [`forward_request_stream(request_id)`](/api-reference/api-bridge#forward-request-stream) | waits for a queued or streamed answer |
 | [`forward_request_finalize(request_id, data)`](/api-reference/api-bridge#forward-request-finalize) | stores a streamed request's final answer |
 | [`forward_request_history(params)`](/api-reference/api-bridge#forward-request-history) | past forwarded requests and their answers |
+| [`forward_request_status(requests)`](/api-reference/api-bridge#forward-request-status) / [`forward_request_read(request_id)`](/api-reference/api-bridge#forward-request-read) | where many requests stand / one request in full |
+| [`forward_request_queue_counters(queues)`](/api-reference/api-bridge#forward-request-queue-counters) | counters of up to 20 queues |
+| [`on_request_status(callback)`](/api-reference/api-bridge#on-request-status) / [`is_request_status_live()`](/api-reference/api-bridge#is-request-status-live) | status changes of requests sent with `notify` |
 | [`cancel_forward_request(params)`](/api-reference/api-bridge#cancel-forward-request) / [`forward_request_queue_count(params)`](/api-reference/api-bridge#forward-request-queue-count) | queue control |
 
 ## [Tickets](/api-reference/tickets)

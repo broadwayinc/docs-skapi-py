@@ -8,7 +8,7 @@ See [Connecting to Realtime](/realtime/connecting) and [Groups and Messages](/re
 skapi.connect_realtime(callback) -> None
 ```
 
-Opens the realtime connection and returns once it is open. `callback(event)` runs on a background thread for every event; see [Events](/realtime/connecting#events). Called again while connected, it only swaps the callback. The connection reopens on its own after a drop.
+Opens the realtime connection and returns once it is open. `callback(event)` runs on a background thread for every event; see [Events](/realtime/connecting#events). Called again while connected, it only swaps the callback. Called while another connect is still opening, it waits for that one and then does the same. The connection reopens on its own after a drop. Status changes of forwarded requests sent with `notify` never reach the callback; see [on_request_status](/api-reference/api-bridge#on-request-status).
 
 ### Errors
 
